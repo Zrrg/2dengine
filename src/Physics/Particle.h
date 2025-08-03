@@ -4,6 +4,7 @@
 struct Particle {
     int radius; 
     float mass;
+    float invMass;
 
     Vec2 position;
     Vec2 velocity;

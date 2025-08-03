@@ -34,6 +34,24 @@ void Application::Input() {
             case SDL_KEYDOWN:
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     running = false;
+                if (event.key.keysym.sym == SDLK_UP)
+                    pushForce.y = -50 * PIXELS_PER_METER;
+                if (event.key.keysym.sym == SDLK_LEFT)
+                    pushForce.x = -50 * PIXELS_PER_METER;
+                if (event.key.keysym.sym == SDLK_DOWN)
+                    pushForce.y = 50 * PIXELS_PER_METER;
+                if (event.key.keysym.sym == SDLK_RIGHT)
+                    pushForce.x = 50 * PIXELS_PER_METER;
+                break;
+            case SDL_KEYUP:
+                if (event.key.keysym.sym == SDLK_UP)
+                    pushForce.y = 0;
+                if (event.key.keysym.sym == SDLK_LEFT)
+                    pushForce.x = 0;
+                if (event.key.keysym.sym == SDLK_DOWN)
+                    pushForce.y = 0;
+                if (event.key.keysym.sym == SDLK_LEFT)
+                    pushForce.x = 0;
                 break;
         }
     }
@@ -61,16 +79,20 @@ void Application::Update() {
 //+-------------------------------------------------------------------------+//
 // ACTUALLY update the objects in the scene 
 //+-------------------------------------------------------------------------+//
-  for (auto particle : particles) {
-    // Apply a "wind force"
-    Vec2 wind = Vec2(1.0 * PIXELS_PER_METER, 0.0);
-    particle->AddForce(wind);
-  }
+//   for (auto particle : particles) {
+//     // Apply a "wind force"
+//     Vec2 wind = Vec2(1.0 * PIXELS_PER_METER, 0.0);
+//     particle->AddForce(wind);
+//   }
 
   for (auto particle : particles) {
     // Apply a "weight force"
     Vec2 weight = Vec2(0.0, particle->mass * GRAVITY * PIXELS_PER_METER);
     particle->AddForce(weight);
+  }
+
+  for (auto particle : particles) {
+    particle->AddForce(pushForce);
   }
 
   for (auto particle : particles) {
