@@ -1,14 +1,13 @@
+#define SDL_MAIN_HANDLED
 #include "Application.h"
 
 //+-------------------------------------------------------------------------+//
 //| Entry point - Multiplatform for SDL2 app
 //+-------------------------------------------------------------------------+//
 
-#ifdef _WIN32
-  int WINAPI WinMain() 
-#else
-  int main(int argc, char * argv[]) 
-#endif
+
+
+int main(int argc, char * argv[]) 
 {
     Application app;
 
