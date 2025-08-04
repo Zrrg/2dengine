@@ -16,9 +16,9 @@ void Application::Setup() {
     anchor = Vec2(Graphics::Width() / 2.0 , 30);
 
     for (int i = 0; i < NUM_PARTICLES; i++) {
-        Particle* bob = new Particle(anchor.x , anchor.y + (i * restLength), 2.0);
+        Body* bob = new Body(anchor.x , anchor.y + (i * restLength), 2.0);
         bob->radius = 6;
-        particles.push_back(bob);
+        bodies.push_back(bob);
     }
 }
 //+-------------------------------------------------------------------------+//
@@ -59,9 +59,9 @@ void Application::Input() {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     int x, y;
                     SDL_GetMouseState(&x, &y);
-                    Particle* particle = new Particle(x, y, 1.0);
-                    particle->radius = 5;
-                    particles.push_back(particle);
+                    Body* body = new Body(x, y, 1.0);
+                    body->radius = 5;
+                    bodies.push_back(body);
                 }
                 break;
             #endif
@@ -81,10 +81,10 @@ void Application::Input() {
             case SDL_MOUSEBUTTONUP:
                 if (leftMouseButtonDown && event.button.button == SDL_BUTTON_LEFT) {
                     leftMouseButtonDown = false;
-                    int lastParticle = NUM_PARTICLES - 1;
-                    Vec2 impulseDirection = (particles[lastParticle]->position - mouseCursor).UnitVector();
-                    float impulseMagnitude = (particles[lastParticle]->position - mouseCursor).Magnitude() * 5.0;
-                    particles[lastParticle]->velocity = impulseDirection * impulseMagnitude;
+                    int lastBody = NUM_PARTICLES - 1;
+                    Vec2 impulseDirection = (bodies[lastBody]->position - mouseCursor).UnitVector();
+                    float impulseMagnitude = (bodies[lastBody]->position - mouseCursor).Magnitude() * 5.0;
+                    bodies[lastBody]->velocity = impulseDirection * impulseMagnitude;
             }
             break;
         }
@@ -108,54 +108,54 @@ void Application::Update() {
 //+-------------------------------------------------------------------------+//
 // ACTUALLY update the objects in the scene 
 //+-------------------------------------------------------------------------+//
-    particles[0]->AddForce(pushForce);
+    bodies[0]->AddForce(pushForce);
 
-  for (auto particle : particles) {
-    Vec2 drag = Force::GenerateDragForce(*particle, 0.002);
-    particle->AddForce(drag);
+  for (auto body : bodies) {
+    Vec2 drag = Force::GenerateDragForce(*body, 0.002);
+    body->AddForce(drag);
     
-    Vec2 weight = Vec2(0.0, particle->mass * GRAVITY * 100);
-    particle->AddForce(weight);
+    Vec2 weight = Vec2(0.0, body->mass * GRAVITY * 100);
+    body->AddForce(weight);
 
   }
 
-// Apply a spring force to the particle connceted to the anchor
+// Apply a spring force to the body connceted to the anchor
 
-   Vec2 springForce = Force::GenerateSpringForce(*particles[0], anchor, restLength, k);
-   particles[0]->AddForce(springForce);
+   Vec2 springForce = Force::GenerateSpringForce(*bodies[0], anchor, restLength, k);
+   bodies[0]->AddForce(springForce);
 
     for (int i = 1; i < NUM_PARTICLES; i++) {
-        Vec2 springForce = Force::GenerateSpringForce(*particles[i], *particles[i-1], restLength, k);
-        particles[i]->AddForce(springForce);
-        particles[i-1]->AddForce(-springForce);
+        Vec2 springForce = Force::GenerateSpringForce(*bodies[i], *bodies[i-1], restLength, k);
+        bodies[i]->AddForce(springForce);
+        bodies[i-1]->AddForce(-springForce);
     }
 
    
 
 // Integrate the acceleration and the velocity to find the new position
-  for (auto particle : particles) {
-    particle->Integrate(deltaTime);
+  for (auto body : bodies) {
+    body->Integrate(deltaTime);
     }
 
     //+-------------------------------------------------------------------------+//
     // screen border bounce
     //+-------------------------------------------------------------------------+//
-  for (auto particle : particles) {
-    if (particle->position.y + particle->radius >= Graphics::Height()) { // bottom
-        particle->position.y = Graphics::Height() - particle->radius;
-        particle->velocity.y *= -BOUNCE_FACTOR;
+  for (auto body : bodies) {
+    if (body->position.y + body->radius >= Graphics::Height()) { // bottom
+        body->position.y = Graphics::Height() - body->radius;
+        body->velocity.y *= -BOUNCE_FACTOR;
      }
-    else if (particle->position.y <= 0) {                                    // top
-        particle->position.y = particle->radius;
-        particle->velocity.y *= -BOUNCE_FACTOR;
+    else if (body->position.y <= 0) {                                    // top
+        body->position.y = body->radius;
+        body->velocity.y *= -BOUNCE_FACTOR;
     }
-    if (particle->position.x + particle->radius >= Graphics::Width()) { // right
-        particle->position.x = Graphics::Width() - particle->radius;
-        particle->velocity.x *= -BOUNCE_FACTOR;
+    if (body->position.x + body->radius >= Graphics::Width()) { // right
+        body->position.x = Graphics::Width() - body->radius;
+        body->velocity.x *= -BOUNCE_FACTOR;
     }
-    else if (particle->position.x <= 0) {                                   // left
-        particle->position.x = particle->radius;
-        particle->velocity.x *= -BOUNCE_FACTOR;
+    else if (body->position.x <= 0) {                                   // left
+        body->position.x = body->radius;
+        body->velocity.x *= -BOUNCE_FACTOR;
     }
   }
 }
@@ -167,28 +167,28 @@ void Application::Render () {
     Graphics::ClearScreen(0xFF0F0725);
 
      if (leftMouseButtonDown) 
-         Graphics::DrawLine(particles[NUM_PARTICLES-1]->position.x, particles[NUM_PARTICLES-1]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
+         Graphics::DrawLine(bodies[NUM_PARTICLES-1]->position.x, bodies[NUM_PARTICLES-1]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
 
    // Draw the anchor
     Graphics::DrawFillCircle(anchor.x, anchor.y, 5, 0xFF001155);
     
 
-// Предполагая, что particles - это std::vector<Particle*> или аналогичный контейнер указателей
+// Предполагая, что bodies - это std::vector<Body*> или аналогичный контейнер указателей
     for (int i = 0; i < NUM_PARTICLES; i++) {
 
-    Particle* particle = particles[i];
+    Body* body = bodies[i];
     
     // Рисуем саму частицу
-    Graphics::DrawFillCircle(particle->position.x, particle->position.y, particle->radius, 0xFFFFFFFF);
+    Graphics::DrawFillCircle(body->position.x, body->position.y, body->radius, 0xFFFFFFFF);
     
     if (i == 0) {
         // Для первой частицы - линия к anchor
-        Graphics::DrawLine(anchor.x, anchor.y, particle->position.x, particle->position.y, 0xFF346622);
+        Graphics::DrawLine(anchor.x, anchor.y, body->position.x, body->position.y, 0xFF346622);
     } else {
         // Для остальных - линия к предыдущей частице
-        Particle* prev_particle = particles[i-1];
-        Graphics::DrawLine(prev_particle->position.x, prev_particle->position.y, 
-                          particle->position.x, particle->position.y, 0xFF346622);
+        Body* prev_body = bodies[i-1];
+        Graphics::DrawLine(prev_body->position.x, prev_body->position.y, 
+                          body->position.x, body->position.y, 0xFF346622);
     }
 }
   
@@ -199,8 +199,8 @@ void Application::Render () {
 // Destroy function to delete objects and close the window
 //+-------------------------------------------------------------------------+//
 void Application::Destroy() {
-    for (auto particle: particles) {
-        delete particle;
+    for (auto body: bodies) {
+        delete body;
     }
     Graphics::CloseWindow();
 }
