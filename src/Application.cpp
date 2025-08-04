@@ -13,14 +13,11 @@ bool Application::IsRunning() {
 void Application::Setup() {
     running = Graphics::OpenWindow();
 
-    anchor = Vec2(Graphics::Width() / 2.0 , 30);
-
-    for (int i = 0; i < NUM_PARTICLES; i++) {
-        Body* bob = new Body(anchor.x , anchor.y + (i * restLength), 2.0);
+        Body* bob = new Body( 500 , 500, 2.0);
         bob->radius = 6;
         bodies.push_back(bob);
     }
-}
+
 //+-------------------------------------------------------------------------+//
 //| Input processing - called several times per second
 //+-------------------------------------------------------------------------+//
@@ -81,10 +78,9 @@ void Application::Input() {
             case SDL_MOUSEBUTTONUP:
                 if (leftMouseButtonDown && event.button.button == SDL_BUTTON_LEFT) {
                     leftMouseButtonDown = false;
-                    int lastBody = NUM_PARTICLES - 1;
-                    Vec2 impulseDirection = (bodies[lastBody]->position - mouseCursor).UnitVector();
-                    float impulseMagnitude = (bodies[lastBody]->position - mouseCursor).Magnitude() * 5.0;
-                    bodies[lastBody]->velocity = impulseDirection * impulseMagnitude;
+                    Vec2 impulseDirection = (bodies[0]->position - mouseCursor).UnitVector();
+                    float impulseMagnitude = (bodies[0]->position - mouseCursor).Magnitude() * 5.0;
+                    bodies[0]->velocity = impulseDirection * impulseMagnitude;
             }
             break;
         }
@@ -105,59 +101,47 @@ void Application::Update() {
     if (deltaTime > DELTA_SAFEGUARD) deltaTime = DELTA_SAFEGUARD;
     // Set the time of the current frame to be used in the next one
     timePreviousFrame = SDL_GetTicks64();
+
 //+-------------------------------------------------------------------------+//
 // ACTUALLY update the objects in the scene 
 //+-------------------------------------------------------------------------+//
     bodies[0]->AddForce(pushForce);
 
-  for (auto body : bodies) {
-    Vec2 drag = Force::GenerateDragForce(*body, 0.002);
-    body->AddForce(drag);
-    
-    Vec2 weight = Vec2(0.0, body->mass * GRAVITY * 100);
-    body->AddForce(weight);
+    for (auto body : bodies) {
+        Vec2 drag = Force::GenerateDragForce(*body, 0.002);
+        body->AddForce(drag);
+        
+        Vec2 weight = Vec2(0.0, body->mass * GRAVITY * 100);
+        body->AddForce(weight);
 
-  }
-
-// Apply a spring force to the body connceted to the anchor
-
-   Vec2 springForce = Force::GenerateSpringForce(*bodies[0], anchor, restLength, k);
-   bodies[0]->AddForce(springForce);
-
-    for (int i = 1; i < NUM_PARTICLES; i++) {
-        Vec2 springForce = Force::GenerateSpringForce(*bodies[i], *bodies[i-1], restLength, k);
-        bodies[i]->AddForce(springForce);
-        bodies[i-1]->AddForce(-springForce);
     }
 
-   
-
-// Integrate the acceleration and the velocity to find the new position
-  for (auto body : bodies) {
-    body->Integrate(deltaTime);
+    // Integrate the acceleration and the velocity to find the new position
+    for (auto body : bodies) {
+        body->Integrate(deltaTime);
     }
 
     //+-------------------------------------------------------------------------+//
     // screen border bounce
     //+-------------------------------------------------------------------------+//
-  for (auto body : bodies) {
-    if (body->position.y + body->radius >= Graphics::Height()) { // bottom
-        body->position.y = Graphics::Height() - body->radius;
-        body->velocity.y *= -BOUNCE_FACTOR;
-     }
-    else if (body->position.y <= 0) {                                    // top
-        body->position.y = body->radius;
-        body->velocity.y *= -BOUNCE_FACTOR;
+    for (auto body : bodies) {
+        if (body->position.y + body->radius >= Graphics::Height()) { // bottom
+            body->position.y = Graphics::Height() - body->radius;
+            body->velocity.y *= -BOUNCE_FACTOR;
+        }
+        else if (body->position.y <= 0) {                                    // top
+            body->position.y = body->radius;
+            body->velocity.y *= -BOUNCE_FACTOR;
+        }
+        if (body->position.x + body->radius >= Graphics::Width()) { // right
+            body->position.x = Graphics::Width() - body->radius;
+            body->velocity.x *= -BOUNCE_FACTOR;
+        }
+        else if (body->position.x <= 0) {                                   // left
+            body->position.x = body->radius;
+            body->velocity.x *= -BOUNCE_FACTOR;
+        }
     }
-    if (body->position.x + body->radius >= Graphics::Width()) { // right
-        body->position.x = Graphics::Width() - body->radius;
-        body->velocity.x *= -BOUNCE_FACTOR;
-    }
-    else if (body->position.x <= 0) {                                   // left
-        body->position.x = body->radius;
-        body->velocity.x *= -BOUNCE_FACTOR;
-    }
-  }
 }
 
 //+-------------------------------------------------------------------------+//
@@ -167,31 +151,10 @@ void Application::Render () {
     Graphics::ClearScreen(0xFF0F0725);
 
      if (leftMouseButtonDown) 
-         Graphics::DrawLine(bodies[NUM_PARTICLES-1]->position.x, bodies[NUM_PARTICLES-1]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
+         Graphics::DrawLine(bodies[0]->position.x, bodies[0]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
 
-   // Draw the anchor
-    Graphics::DrawFillCircle(anchor.x, anchor.y, 5, 0xFF001155);
+    Graphics::DrawFillCircle(bodies[0]->position.x, bodies[0]->position.y, bodies[0]->radius, 0xFFFFFFFF);
     
-
-// Предполагая, что bodies - это std::vector<Body*> или аналогичный контейнер указателей
-    for (int i = 0; i < NUM_PARTICLES; i++) {
-
-    Body* body = bodies[i];
-    
-    // Рисуем саму частицу
-    Graphics::DrawFillCircle(body->position.x, body->position.y, body->radius, 0xFFFFFFFF);
-    
-    if (i == 0) {
-        // Для первой частицы - линия к anchor
-        Graphics::DrawLine(anchor.x, anchor.y, body->position.x, body->position.y, 0xFF346622);
-    } else {
-        // Для остальных - линия к предыдущей частице
-        Body* prev_body = bodies[i-1];
-        Graphics::DrawLine(prev_body->position.x, prev_body->position.y, 
-                          body->position.x, body->position.y, 0xFF346622);
-    }
-}
-  
     Graphics::RenderFrame();
 }
 
