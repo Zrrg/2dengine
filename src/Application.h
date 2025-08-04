@@ -12,8 +12,8 @@ class Application {
         Vec2 mouseCursor = Vec2(0, 0);
         bool leftMouseButtonDown = false;
 
-        Vec2 anchor = Vec2(0, 0);
-        float k = 40;
+        Vec2 anchor;
+        float k = 10;
         float restLength = 20;
 
         // SDL_Rect liquid;

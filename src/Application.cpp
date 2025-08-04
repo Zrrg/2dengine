@@ -15,9 +15,25 @@ void Application::Setup() {
 
     anchor = Vec2(Graphics::Width() / 2.0 , 30);
 
-     Particle* bob = new Particle(Graphics::Width() / 2.0, Graphics::Height() / 2.0, 2.0);
-     bob->radius = 30;
-     particles.push_back(bob);
+    Particle* bob0 = new Particle(Graphics::Width() / 2.0, 50, 2.0);
+    bob0->radius = 10;
+    particles.push_back(bob0);
+
+    Particle* bob1 = new Particle(Graphics::Width() / 2.0, 100, 2.0);
+    bob1->radius = 10;
+    particles.push_back(bob1);
+
+    Particle* bob2 = new Particle(Graphics::Width() / 2.0, 200, 2.0);
+    bob2->radius = 10;
+    particles.push_back(bob2);
+
+    Particle* bob3 = new Particle(Graphics::Width() / 2.0, 300, 2.0);
+    bob3->radius = 10;
+    particles.push_back(bob3);
+
+    Particle* bob4 = new Particle(Graphics::Width() / 2.0, 400, 2.0);
+    bob4->radius = 10;
+    particles.push_back(bob4);
 
     // Particle * smallPlanet = new Particle(200, 200, 1.0);
     // smallPlanet->radius = 6;
@@ -118,21 +134,35 @@ void Application::Update() {
 //+-------------------------------------------------------------------------+//
 // ACTUALLY update the objects in the scene 
 //+-------------------------------------------------------------------------+//
-  for (auto particle : particles) {
-    particle->AddForce(pushForce);
+    particles[0]->AddForce(pushForce);
 
+  for (auto particle : particles) {
     Vec2 drag = Force::GenerateDragForce(*particle, 0.03);
-    particle->AddForce(drag);
+    //particle->AddForce(drag);
     
     Vec2 weight = Vec2(0.0, particle->mass * GRAVITY * PIXELS_PER_METER);
-    particle->AddForce(weight);
+    //particle->AddForce(weight);
 
   }
 
 // Apply a spring force to the particle connceted to the anchor
+
    Vec2 springForce = Force::GenerateSpringForce(*particles[0], anchor, restLength, k);
    particles[0]->AddForce(springForce);
 
+   Vec2 springForce1 = Force::GenerateSpringForce(*particles[1], particles[0]->position, restLength, k);
+   particles[1]->AddForce(springForce1);
+   
+   Vec2 springForce2 = Force::GenerateSpringForce(*particles[2], particles[1]->position, restLength, k);
+   particles[2]->AddForce(springForce2);
+
+   Vec2 springForce3 = Force::GenerateSpringForce(*particles[3], particles[2]->position, restLength, k);
+   particles[3]->AddForce(springForce3);
+
+   Vec2 springForce4 = Force::GenerateSpringForce(*particles[4], particles[3]->position, restLength, k);
+   particles[4]->AddForce(springForce4);
+
+   
 
 // Integrate the acceleration and the velocity to find the new position
   for (auto particle : particles) {
@@ -168,18 +198,31 @@ void Application::Update() {
 void Application::Render () {
     Graphics::ClearScreen(0xFF0F0725);
 
-    // if (leftMouseButtonDown) 
-    //     Graphics::DrawLine(particles[0]->position.x, particles[0]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
+     if (leftMouseButtonDown) 
+         Graphics::DrawLine(particles[0]->position.x, particles[0]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
 
    // Draw the anchor
     Graphics::DrawFillCircle(anchor.x, anchor.y, 5, 0xFF001155);
     
-    // Draw the bob
-    Graphics::DrawFillCircle(particles[0]->position.x, particles[0]->position.y, particles[0]->radius, 0xFFFFFFFF);
 
-    // draw the spring
-    Graphics::DrawLine(anchor.x, anchor.y, particles[0]->position.x, particles[0]->position.y, 0xFF313131);
-
+// Предполагая, что particles - это std::vector<Particle*> или аналогичный контейнер указателей
+for (size_t i = 0; i < particles.size(); ++i) {
+    Particle* particle = particles[i];
+    
+    // Рисуем саму частицу
+    Graphics::DrawFillCircle(particle->position.x, particle->position.y, particle->radius, 0xFFFFFFFF);
+    
+    if (i == 0) {
+        // Для первой частицы - линия к anchor
+        Graphics::DrawLine(anchor.x, anchor.y, particle->position.x, particle->position.y, 0xFF346622);
+    } else {
+        // Для остальных - линия к предыдущей частице
+        Particle* prev_particle = particles[i-1];
+        Graphics::DrawLine(prev_particle->position.x, prev_particle->position.y, 
+                          particle->position.x, particle->position.y, 0xFF346622);
+    }
+}
+  
     Graphics::RenderFrame();
 }
 
