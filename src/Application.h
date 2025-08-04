@@ -8,8 +8,15 @@ class Application {
     private:
         bool running = false;
         std::vector<Particle *> particles;
-        Vec2 pushForce = Vec2(0.0, 0.0);
-        SDL_Rect liquid;
+        Vec2 pushForce = Vec2(0, 0);
+        Vec2 mouseCursor = Vec2(0, 0);
+        bool leftMouseButtonDown = false;
+
+        Vec2 anchor = Vec2(0, 0);
+        float k = 40;
+        float restLength = 200;
+
+        // SDL_Rect liquid;
     
     public:
         Application() = default;
