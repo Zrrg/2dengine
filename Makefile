@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -std=c++23 -I./src -I./src/Physics
+CXXFLAGS := -std=c++23 -I./src -I./src/Physics -MMD -MP
 LDFLAGS := -lSDL2 -lSDL2_image -lSDL2_gfx -lm
 
 ifeq ($(OS),Windows_NT)

@@ -19,8 +19,20 @@ Vec2 Force::GenerateFrictionForce(const Particle& particle, float k) {
     return frictionForce;
 }
 
-Vec2 Force::GenerateSpringForce (const Particle& a, Vec2 anchor, float restLength, float k) {
-    
+Vec2 Force::GenerateSpringForce (const Particle& particle, Vec2 anchor, float restLength, float k) {
+    // Calculate the distance between the anchor and the object
+    Vec2 d = particle.position - anchor;
+
+    // Find the spring displacement considering the rest length
+    float displacement = d.Magnitude() - restLength;
+
+    // Calculate the direction and the magnitude of the spring force
+    Vec2 springDirection = d.UnitVector();
+    float springMagnitude = -k * displacement;
+
+    // Calculate the final resulting spring force vectore
+    Vec2 springForce = springDirection * springMagnitude;
+    return springForce;
 }
 
 Vec2 Force::GenerateGravitationalForce (const Particle& a, const Particle& b, float G, float minDistance, float maxDistance) {

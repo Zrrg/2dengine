@@ -14,7 +14,7 @@ class Application {
 
         Vec2 anchor = Vec2(0, 0);
         float k = 40;
-        float restLength = 200;
+        float restLength = 20;
 
         // SDL_Rect liquid;
     

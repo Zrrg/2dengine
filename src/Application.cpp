@@ -13,13 +13,19 @@ bool Application::IsRunning() {
 void Application::Setup() {
     running = Graphics::OpenWindow();
 
-    Particle * smallPlanet = new Particle(200, 200, 1.0);
-    smallPlanet->radius = 6;
-    particles.push_back(smallPlanet);
+    anchor = Vec2(Graphics::Width() / 2.0 , 30);
 
-    Particle * bigPlanet = new Particle(500, 500, 20.0);
-    bigPlanet->radius = 20;
-    particles.push_back(bigPlanet);
+     Particle* bob = new Particle(Graphics::Width() / 2.0, Graphics::Height() / 2.0, 2.0);
+     bob->radius = 30;
+     particles.push_back(bob);
+
+    // Particle * smallPlanet = new Particle(200, 200, 1.0);
+    // smallPlanet->radius = 6;
+    // particles.push_back(smallPlanet);
+
+    // Particle * bigPlanet = new Particle(500, 500, 20.0);
+    // bigPlanet->radius = 20;
+    // particles.push_back(bigPlanet);
 
     // liquid.x = 0;
     // liquid.y = Graphics::Height() /2;
@@ -113,21 +119,19 @@ void Application::Update() {
 // ACTUALLY update the objects in the scene 
 //+-------------------------------------------------------------------------+//
   for (auto particle : particles) {
-    Vec2 wind = Vec2(0.0 * PIXELS_PER_METER, 0.0);
-    Vec2 weight = Vec2(0.0, particle->mass * GRAVITY * PIXELS_PER_METER);
-    //particle->AddForce(wind);
-    //particle->AddForce(weight);  
     particle->AddForce(pushForce);
-    // if(particle->position.y >= liquid.y) {
-    //     Vec2 drag = Force::GenerateDragForce(*particle, 0.03);
-    //     particle->AddForce(drag);
-    // }
-    Vec2 friction = Force::GenerateFrictionForce(* particle, 10.0 * PIXELS_PER_METER);
-    //particle->AddForce(friction);
-    Vec2 attraction = Force::GenerateGravitationalForce(*particles[0], *particles[1], 2500.0, 5 , 200);
-    particles[0]->AddForce(attraction);
-    particles[1]->AddForce(-attraction);
+
+    Vec2 drag = Force::GenerateDragForce(*particle, 0.03);
+    particle->AddForce(drag);
+    
+    Vec2 weight = Vec2(0.0, particle->mass * GRAVITY * PIXELS_PER_METER);
+    particle->AddForce(weight);
+
   }
+
+// Apply a spring force to the particle connceted to the anchor
+   Vec2 springForce = Force::GenerateSpringForce(*particles[0], anchor, restLength, k);
+   particles[0]->AddForce(springForce);
 
 
 // Integrate the acceleration and the velocity to find the new position
@@ -164,12 +168,18 @@ void Application::Update() {
 void Application::Render () {
     Graphics::ClearScreen(0xFF0F0725);
 
-    // Draw the liquid in the scene
-    // Graphics::DrawFillRect(liquid.x + liquid.w /2, liquid.y + liquid.h /2, liquid.w, liquid.h, 0xFF6EE3713);
+    // if (leftMouseButtonDown) 
+    //     Graphics::DrawLine(particles[0]->position.x, particles[0]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
 
-      Graphics::DrawFillCircle(particles[0]->position.x, particles[0]->position.y, particles[0]->radius, 0xFFAA3300);
-      Graphics::DrawFillCircle(particles[1]->position.x, particles[1]->position.y, particles[1]->radius, 0xFF00FFFF);
+   // Draw the anchor
+    Graphics::DrawFillCircle(anchor.x, anchor.y, 5, 0xFF001155);
     
+    // Draw the bob
+    Graphics::DrawFillCircle(particles[0]->position.x, particles[0]->position.y, particles[0]->radius, 0xFFFFFFFF);
+
+    // draw the spring
+    Graphics::DrawLine(anchor.x, anchor.y, particles[0]->position.x, particles[0]->position.y, 0xFF313131);
+
     Graphics::RenderFrame();
 }
 
