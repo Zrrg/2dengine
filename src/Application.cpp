@@ -15,45 +15,18 @@ void Application::Setup() {
 
     anchor = Vec2(Graphics::Width() / 2.0 , 30);
 
-    Particle* bob0 = new Particle(Graphics::Width() / 2.0, 50, 2.0);
-    bob0->radius = 10;
-    particles.push_back(bob0);
-
-    Particle* bob1 = new Particle(Graphics::Width() / 2.0, 100, 2.0);
-    bob1->radius = 10;
-    particles.push_back(bob1);
-
-    Particle* bob2 = new Particle(Graphics::Width() / 2.0, 200, 2.0);
-    bob2->radius = 10;
-    particles.push_back(bob2);
-
-    Particle* bob3 = new Particle(Graphics::Width() / 2.0, 300, 2.0);
-    bob3->radius = 10;
-    particles.push_back(bob3);
-
-    Particle* bob4 = new Particle(Graphics::Width() / 2.0, 400, 2.0);
-    bob4->radius = 10;
-    particles.push_back(bob4);
-
-    // Particle * smallPlanet = new Particle(200, 200, 1.0);
-    // smallPlanet->radius = 6;
-    // particles.push_back(smallPlanet);
-
-    // Particle * bigPlanet = new Particle(500, 500, 20.0);
-    // bigPlanet->radius = 20;
-    // particles.push_back(bigPlanet);
-
-    // liquid.x = 0;
-    // liquid.y = Graphics::Height() /2;
-    // liquid.w = Graphics::Width();
-    // liquid.h = Graphics::Height() /2;
- }
-
+    for (int i = 0; i < NUM_PARTICLES; i++) {
+        Particle* bob = new Particle(anchor.x , anchor.y + (i * restLength), 2.0);
+        bob->radius = 6;
+        particles.push_back(bob);
+    }
+}
 //+-------------------------------------------------------------------------+//
 //| Input processing - called several times per second
 //+-------------------------------------------------------------------------+//
 void Application::Input() {
     SDL_Event event;
+    int pushConst = 150;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
@@ -63,13 +36,13 @@ void Application::Input() {
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     running = false;
                 if (event.key.keysym.sym == SDLK_UP)
-                    pushForce.y = -50 * PIXELS_PER_METER;
+                    pushForce.y = -pushConst * PIXELS_PER_METER;
                 if (event.key.keysym.sym == SDLK_LEFT)
-                    pushForce.x = -50 * PIXELS_PER_METER;
+                    pushForce.x = -pushConst * PIXELS_PER_METER;
                 if (event.key.keysym.sym == SDLK_DOWN)
-                    pushForce.y = 50 * PIXELS_PER_METER;
+                    pushForce.y = pushConst * PIXELS_PER_METER;
                 if (event.key.keysym.sym == SDLK_RIGHT)
-                    pushForce.x = 50 * PIXELS_PER_METER;
+                    pushForce.x = pushConst * PIXELS_PER_METER;
             break;
             case SDL_KEYUP:
                 if (event.key.keysym.sym == SDLK_UP)
@@ -108,9 +81,10 @@ void Application::Input() {
             case SDL_MOUSEBUTTONUP:
                 if (leftMouseButtonDown && event.button.button == SDL_BUTTON_LEFT) {
                     leftMouseButtonDown = false;
-                    Vec2 impulseDirection = (particles[0]->position - mouseCursor).UnitVector();
-                    float impulseMagnitude = (particles[0]->position - mouseCursor).Magnitude() * 0.9;
-                    particles[0]->velocity = impulseDirection * impulseMagnitude;
+                    int lastParticle = NUM_PARTICLES - 1;
+                    Vec2 impulseDirection = (particles[lastParticle]->position - mouseCursor).UnitVector();
+                    float impulseMagnitude = (particles[lastParticle]->position - mouseCursor).Magnitude() * 5.0;
+                    particles[lastParticle]->velocity = impulseDirection * impulseMagnitude;
             }
             break;
         }
@@ -137,11 +111,11 @@ void Application::Update() {
     particles[0]->AddForce(pushForce);
 
   for (auto particle : particles) {
-    Vec2 drag = Force::GenerateDragForce(*particle, 0.03);
-    //particle->AddForce(drag);
+    Vec2 drag = Force::GenerateDragForce(*particle, 0.002);
+    particle->AddForce(drag);
     
-    Vec2 weight = Vec2(0.0, particle->mass * GRAVITY * PIXELS_PER_METER);
-    //particle->AddForce(weight);
+    Vec2 weight = Vec2(0.0, particle->mass * GRAVITY * 100);
+    particle->AddForce(weight);
 
   }
 
@@ -150,17 +124,11 @@ void Application::Update() {
    Vec2 springForce = Force::GenerateSpringForce(*particles[0], anchor, restLength, k);
    particles[0]->AddForce(springForce);
 
-   Vec2 springForce1 = Force::GenerateSpringForce(*particles[1], particles[0]->position, restLength, k);
-   particles[1]->AddForce(springForce1);
-   
-   Vec2 springForce2 = Force::GenerateSpringForce(*particles[2], particles[1]->position, restLength, k);
-   particles[2]->AddForce(springForce2);
-
-   Vec2 springForce3 = Force::GenerateSpringForce(*particles[3], particles[2]->position, restLength, k);
-   particles[3]->AddForce(springForce3);
-
-   Vec2 springForce4 = Force::GenerateSpringForce(*particles[4], particles[3]->position, restLength, k);
-   particles[4]->AddForce(springForce4);
+    for (int i = 1; i < NUM_PARTICLES; i++) {
+        Vec2 springForce = Force::GenerateSpringForce(*particles[i], *particles[i-1], restLength, k);
+        particles[i]->AddForce(springForce);
+        particles[i-1]->AddForce(-springForce);
+    }
 
    
 
@@ -199,14 +167,15 @@ void Application::Render () {
     Graphics::ClearScreen(0xFF0F0725);
 
      if (leftMouseButtonDown) 
-         Graphics::DrawLine(particles[0]->position.x, particles[0]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
+         Graphics::DrawLine(particles[NUM_PARTICLES-1]->position.x, particles[NUM_PARTICLES-1]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
 
    // Draw the anchor
     Graphics::DrawFillCircle(anchor.x, anchor.y, 5, 0xFF001155);
     
 
 // Предполагая, что particles - это std::vector<Particle*> или аналогичный контейнер указателей
-for (size_t i = 0; i < particles.size(); ++i) {
+    for (int i = 0; i < NUM_PARTICLES; i++) {
+
     Particle* particle = particles[i];
     
     // Рисуем саму частицу

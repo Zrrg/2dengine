@@ -3,7 +3,7 @@
 const int FPS = 60;
 const int MILLISECS_PER_FRAME = 1000 / FPS;
 
-const int PIXELS_PER_METER = 10000;
+const int PIXELS_PER_METER = 100;
 const float GRAVITY = 9.81;
 const float ATTRACTION = 0.00000000006674; // gravitational attraction constant in real world 6.674*10^-11
 
