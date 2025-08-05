@@ -1,11 +1,10 @@
-#define SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED    // so Windows MinGW won't complain about winMain
 #include "Application.h"
 
-//+-------------------------------------------------------------------------+//
-//| Entry point - Multiplatform for SDL2 app
-//+-------------------------------------------------------------------------+//
 
-
+//+-------------------------------------------------------------------------+//
+//| Entry point - Multiplatform SDL2 app
+//+-------------------------------------------------------------------------+//
 
 int main(int argc, char * argv[]) 
 {

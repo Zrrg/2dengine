@@ -1,7 +1,16 @@
+#define IMGUI_ENABLED false
+
 #include "Application.h"
 #include "./Physics/Constants.h"
 #include "./Graphics.h"
 #include "./Force.h"
+#include "./Shape.h"
+#if IMGUI_ENABLED
+    #include "imgui.h"
+    #include "imgui_impl_sdl2.h"
+    #include "imgui_impl_sdlrenderer2.h"
+#endif
+
 
 bool Application::IsRunning() {
     return running;
@@ -13,18 +22,38 @@ bool Application::IsRunning() {
 void Application::Setup() {
     running = Graphics::OpenWindow();
 
-        Body* bob = new Body( 500 , 500, 2.0);
-        bob->radius = 6;
-        bodies.push_back(bob);
-    }
+#if IMGUI_ENABLED
+    // ImGui integration - setup
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    ImGui_ImplSDL2_InitForSDLRenderer(Graphics::window, Graphics::renderer);
+    ImGui_ImplSDLRenderer2_Init(Graphics::renderer);
+#endif
+
+    Body* bob = new Body(CircleShape(5), 500 , 500, 2.0);
+    bodies.push_back(bob);
+
+    
+    Body* sam = new Body(CircleShape(5), 500 , 300, 2.0);
+    bodies.push_back(sam);
+
+    Body* petr = new Body(CircleShape(5), 500 , 700, 2.0);
+    bodies.push_back(petr);
+}
 
 //+-------------------------------------------------------------------------+//
 //| Input processing - called several times per second
 //+-------------------------------------------------------------------------+//
 void Application::Input() {
     SDL_Event event;
-    int pushConst = 150;
+    int pushConst = 50;
     while (SDL_PollEvent(&event)) {
+    #if IMGUI_ENABLED
+        ImGui_ImplSDL2_ProcessEvent(&event);
+    #endif
         switch (event.type) {
             case SDL_QUIT:
                 running = false;
@@ -91,6 +120,13 @@ void Application::Input() {
 //| Update function - called several times per second to update objects
 //+-------------------------------------------------------------------------+//
 void Application::Update() {
+  #if IMGUI_ENABLED
+    // Imgui integration - update
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow();
+  #endif
+
     // Wait some time until the reach the target frame time in milliseconds
     static int timePreviousFrame;
     int timeToWait = MILLISECS_PER_FRAME - (SDL_GetTicks64() - timePreviousFrame); 
@@ -105,9 +141,11 @@ void Application::Update() {
 //+-------------------------------------------------------------------------+//
 // ACTUALLY update the objects in the scene 
 //+-------------------------------------------------------------------------+//
-    bodies[0]->AddForce(pushForce);
+    
 
     for (auto body : bodies) {
+        body->AddForce(pushForce);
+
         Vec2 drag = Force::GenerateDragForce(*body, 0.002);
         body->AddForce(drag);
         
@@ -125,21 +163,22 @@ void Application::Update() {
     // screen border bounce
     //+-------------------------------------------------------------------------+//
     for (auto body : bodies) {
-        if (body->position.y + body->radius >= Graphics::Height()) { // bottom
-            body->position.y = Graphics::Height() - body->radius;
-            body->velocity.y *= -BOUNCE_FACTOR;
-        }
-        else if (body->position.y <= 0) {                                    // top
-            body->position.y = body->radius;
-            body->velocity.y *= -BOUNCE_FACTOR;
-        }
-        if (body->position.x + body->radius >= Graphics::Width()) { // right
-            body->position.x = Graphics::Width() - body->radius;
-            body->velocity.x *= -BOUNCE_FACTOR;
-        }
-        else if (body->position.x <= 0) {                                   // left
-            body->position.x = body->radius;
-            body->velocity.x *= -BOUNCE_FACTOR;
+        if (body->shape->GetType() == CIRCLE) {
+            CircleShape* circleShape = (CircleShape*)body->shape;
+            if (body->position.y + circleShape->radius >= Graphics::Height()) { // bottom
+                body->position.y = Graphics::Height() - circleShape->radius;
+                body->velocity.y *= -BOUNCE_FACTOR;
+            } else if (body->position.y <= 0) {                                    // top
+                body->position.y = circleShape->radius;
+                body->velocity.y *= -BOUNCE_FACTOR;
+            }
+            if (body->position.x + circleShape->radius >= Graphics::Width()) { // right
+                body->position.x = Graphics::Width() - circleShape->radius;
+                body->velocity.x *= -BOUNCE_FACTOR;
+            } else if (body->position.x <= 0) {                                   // left
+                body->position.x = circleShape->radius;
+                body->velocity.x *= -BOUNCE_FACTOR;
+            }
         }
     }
 }
@@ -150,11 +189,25 @@ void Application::Update() {
 void Application::Render () {
     Graphics::ClearScreen(0xFF0F0725);
 
+#if IMGUI_ENABLED
+    ImGui::Render();
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), Graphics::renderer);
+#endif
+
      if (leftMouseButtonDown) 
          Graphics::DrawLine(bodies[0]->position.x, bodies[0]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
 
-    Graphics::DrawFillCircle(bodies[0]->position.x, bodies[0]->position.y, bodies[0]->radius, 0xFFFFFFFF);
-    
+
+    static float angle = 0.0;
+    for (auto body : bodies) {
+        if (body->shape->GetType() == CIRCLE) {
+            CircleShape* circleShape = (CircleShape*) body->shape;
+            Graphics::DrawCircle(body->position.x, body->position.y, circleShape->radius, angle, 0xFFFFFFFF);
+        } else {
+            // todo draw other shapes 
+        }
+    }
+    angle -= 0.05;
     Graphics::RenderFrame();
 }
 
@@ -165,5 +218,11 @@ void Application::Destroy() {
     for (auto body: bodies) {
         delete body;
     }
+
+  #if IMGUI_ENABLED
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+  #endif
     Graphics::CloseWindow();
 }
