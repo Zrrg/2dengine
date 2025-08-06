@@ -1,4 +1,6 @@
+#ifndef IMGUI_ENABLED
 #define IMGUI_ENABLED false
+#endif
 
 #include "Application.h"
 #include "./Physics/Constants.h"
