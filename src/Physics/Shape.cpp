@@ -18,6 +18,12 @@ ShapeType CircleShape::GetType() const {
       return CIRCLE;
 };
 
+float CircleShape::GetMomentOfInertia() const {
+    // For circles the moment of inertia is 1/2 * r^2
+    // but it needs to be multiplied by rigidbody mass
+    return 0.5 * (radius * radius);
+}
+
 PolygonShape::PolygonShape(const std::vector<Vec2> vertices) {
     // todo 
     std::cout << "PolygonShape constructor called!\n";
@@ -33,11 +39,39 @@ ShapeType PolygonShape::GetType() const {
 };
 
 Shape* PolygonShape::Clone() const {
-    return new PolygonShape(vertices);
+    return new PolygonShape(localVertices);
 };
 
-BoxShape::BoxShape(float width, float height) {
+float PolygonShape::GetMomentOfInertia() const {
     // todo 
+    return 0.0;
+};
+
+void PolygonShape::UpdateVertices(float angle, const Vec2& position) {
+    // Loop all the vertices, transforming frmo local to world space
+    for (int i = 0; i < localVertices.size(); i++) {
+        // First, rotate then translate
+        worldVertices[i] = localVertices[i].Rotate(angle);
+        worldVertices[i] += position;
+    }
+}
+
+BoxShape::BoxShape(float width, float height) {
+    this->width = width;
+    this->height = height;
+
+
+    // Load the vertices of the box polygon
+    localVertices.push_back(Vec2(-width / 2.0, -height / 2.0));
+    localVertices.push_back(Vec2(+width / 2.0, -height / 2.0));
+    localVertices.push_back(Vec2(+width / 2.0, +height / 2.0));
+    localVertices.push_back(Vec2(-width / 2.0, +height / 2.0));
+
+    worldVertices.push_back(Vec2(-width / 2.0, -height / 2.0));
+    worldVertices.push_back(Vec2(+width / 2.0, -height / 2.0));
+    worldVertices.push_back(Vec2(+width / 2.0, +height / 2.0));
+    worldVertices.push_back(Vec2(-width / 2.0, +height / 2.0));
+
     std::cout << "PolygonShape constructor called!\n";
 };
 
@@ -46,11 +80,16 @@ BoxShape::~BoxShape() {
     std::cout << "PolygonShape destructor called!\n";
 };
 
+ShapeType BoxShape::GetType() const {
+      return BOX;
+};
+
 Shape* BoxShape::Clone() const {
     return new BoxShape(width, height);
 };
 
-ShapeType BoxShape::GetType() const {
-      return BOX;
+float BoxShape::GetMomentOfInertia() const {
+    // For a rectangle the moment of inertia is 1/12 * (w^2 + h^2), still needs to be multiplied by mass after
+    return (0.083333) * (width * width + height * height);
 };
 

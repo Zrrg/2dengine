@@ -35,15 +35,17 @@ void Application::Setup() {
     ImGui_ImplSDLRenderer2_Init(Graphics::renderer);
 #endif
 
-    Body* bob = new Body(CircleShape(5), 500 , 500, 2.0);
+    Body* bob = new Body(CircleShape(30), 500 , 500, 2.0);
     bodies.push_back(bob);
 
-    
-    Body* sam = new Body(CircleShape(5), 500 , 300, 2.0);
+    Body* sam = new Body(CircleShape(20), 500 , 300, 2.0);
     bodies.push_back(sam);
 
-    Body* petr = new Body(CircleShape(5), 500 , 700, 2.0);
+    Body* petr = new Body(CircleShape(45), 500 , 700, 2.0);
     bodies.push_back(petr);
+
+    Body* box = new Body(BoxShape(200,100), Graphics::Width() / 2.0, Graphics::Height() / 2.0, 1.0);
+    bodies.push_back(box);
 }
 
 //+-------------------------------------------------------------------------+//
@@ -146,24 +148,28 @@ void Application::Update() {
     
 
     for (auto body : bodies) {
-        body->AddForce(pushForce);
-
         Vec2 drag = Force::GenerateDragForce(*body, 0.002);
-        body->AddForce(drag);
-        
         Vec2 weight = Vec2(0.0, body->mass * GRAVITY * 100);
-        body->AddForce(weight);
 
+         body->AddForce(pushForce);
+         body->AddForce(drag);     
+        // body->AddForce(weight);
+
+        float torque = 200;
+        body->AddTorque(torque);
     }
 
-    // Integrate the acceleration and the velocity to find the new position
+//+-------------------------------------------------------------------------+//
+// Integrate the acceleration and the velocity to find the new position
+//+-------------------------------------------------------------------------+//
+
     for (auto body : bodies) {
-        body->Integrate(deltaTime);
+        body->Update(deltaTime);
     }
 
-    //+-------------------------------------------------------------------------+//
-    // screen border bounce
-    //+-------------------------------------------------------------------------+//
+//+-------------------------------------------------------------------------+//
+// screen border bounce
+//+-------------------------------------------------------------------------+//
     for (auto body : bodies) {
         if (body->shape->GetType() == CIRCLE) {
             CircleShape* circleShape = (CircleShape*)body->shape;
@@ -200,16 +206,16 @@ void Application::Render () {
          Graphics::DrawLine(bodies[0]->position.x, bodies[0]->position.y, mouseCursor.x, mouseCursor.y, 0xFF0000FF);
 
 
-    static float angle = 0.0;
-    for (auto body : bodies) {
+     for (auto body : bodies) {
         if (body->shape->GetType() == CIRCLE) {
             CircleShape* circleShape = (CircleShape*) body->shape;
-            Graphics::DrawCircle(body->position.x, body->position.y, circleShape->radius, angle, 0xFFFFFFFF);
-        } else {
-            // todo draw other shapes 
+            Graphics::DrawCircle(body->position.x, body->position.y, circleShape->radius, body->rotation, 0xFFFFFFFF);
+        }
+        if (body->shape->GetType() == BOX) {
+            BoxShape* boxShape = (BoxShape*)body->shape;
+            Graphics::DrawPolygon(body->position.x, body->position.y, boxShape->worldVertices, 0xFFFFFFFF);
         }
     }
-    angle -= 0.05;
     Graphics::RenderFrame();
 }
 
