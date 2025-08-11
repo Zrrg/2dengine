@@ -7,6 +7,9 @@
 #include "./Graphics.h"
 #include "./Force.h"
 #include "./Shape.h"
+#include "./CollisionDetection.h"
+#include "Contact.h"
+
 #if IMGUI_ENABLED
     #include "imgui.h"
     #include "imgui_impl_sdl2.h"
@@ -35,17 +38,12 @@ void Application::Setup() {
     ImGui_ImplSDLRenderer2_Init(Graphics::renderer);
 #endif
 
-    Body* bob = new Body(CircleShape(30), 500 , 500, 2.0);
+    Body* bob = new Body(CircleShape(100), 100 , 100, 1.0);
     bodies.push_back(bob);
 
-    Body* sam = new Body(CircleShape(20), 500 , 300, 2.0);
+    Body* sam = new Body(CircleShape(50), 500 , 100, 2.0);
     bodies.push_back(sam);
 
-    Body* petr = new Body(CircleShape(45), 500 , 700, 2.0);
-    bodies.push_back(petr);
-
-    Body* box = new Body(BoxShape(200,100), Graphics::Width() / 2.0, Graphics::Height() / 2.0, 1.0);
-    bodies.push_back(box);
 }
 
 //+-------------------------------------------------------------------------+//
@@ -124,6 +122,8 @@ void Application::Input() {
 //| Update function - called several times per second to update objects
 //+-------------------------------------------------------------------------+//
 void Application::Update() {
+    Graphics::ClearScreen(0xFF0F0725);
+
   #if IMGUI_ENABLED
     // Imgui integration - update
     ImGui_ImplSDL2_NewFrame();
@@ -148,15 +148,18 @@ void Application::Update() {
     
 
     for (auto body : bodies) {
-        Vec2 drag = Force::GenerateDragForce(*body, 0.002);
         Vec2 weight = Vec2(0.0, body->mass * GRAVITY * 100);
+        Vec2 drag = Force::GenerateDragForce(*body, 0.002);
+        Vec2 wind = Vec2(20 * PIXELS_PER_METER, 0.0);
 
-         body->AddForce(pushForce);
-         body->AddForce(drag);     
-        // body->AddForce(weight);
+        //body->AddForce(weight);
+        body->AddForce(drag);     
+        //body->AddForce(wind);
+        body->AddForce(pushForce);
+        
 
-        float torque = 200;
-        body->AddTorque(torque);
+        // float torque = 200;
+        //  body->AddTorque(torque);
     }
 
 //+-------------------------------------------------------------------------+//
@@ -166,6 +169,31 @@ void Application::Update() {
     for (auto body : bodies) {
         body->Update(deltaTime);
     }
+
+
+//+-------------------------------------------------------------------------+//
+// Check all the rigidbodies with other rigidbodies for collision
+//+-------------------------------------------------------------------------+//
+
+for (int i = 0; i <= bodies.size() - 1; i++) {
+    for (int j = i + 1 ; j < bodies.size(); j++) {
+        // todo check bodies [i] with bodies [j]
+        Body* a = bodies[i];
+        Body* b = bodies[j];
+        a->isColliding = false;
+        b->isColliding = false;
+        Contact contact;
+        if (CollisionDetection::IsColliding(a, b, contact)) {
+            Graphics::DrawFillCircle(contact.start.x, contact.start.y, 3, 0xFFFF00FF);
+            Graphics::DrawFillCircle(contact.end.x, contact.end.y, 3, 0xFFFF00FF);
+            Graphics::DrawLine(contact.start.x, contact.start.y, contact.start.x + contact.normal.x * 15, contact.start.y + contact.normal.y * 15, 0xFFFF00FF);
+            a->isColliding = true;
+            b->isColliding = true;
+        }
+    }
+}
+
+
 
 //+-------------------------------------------------------------------------+//
 // screen border bounce
@@ -195,7 +223,6 @@ void Application::Update() {
 //| Render function - called several times per second to draw objects
 //+-------------------------------------------------------------------------+//
 void Application::Render () {
-    Graphics::ClearScreen(0xFF0F0725);
 
 #if IMGUI_ENABLED
     ImGui::Render();
@@ -207,9 +234,10 @@ void Application::Render () {
 
 
      for (auto body : bodies) {
+        Uint32 color = body-> isColliding ? 0xFF0000FF : 0xFFFFFFFF;
         if (body->shape->GetType() == CIRCLE) {
             CircleShape* circleShape = (CircleShape*) body->shape;
-            Graphics::DrawCircle(body->position.x, body->position.y, circleShape->radius, body->rotation, 0xFFFFFFFF);
+            Graphics::DrawCircle(body->position.x, body->position.y, circleShape->radius, body->rotation, color);
         }
         if (body->shape->GetType() == BOX) {
             BoxShape* boxShape = (BoxShape*)body->shape;
